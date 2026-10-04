@@ -1,0 +1,30 @@
+# Local assistant instructions and working notes (not part of the repo)
+CLAUDE.md
+.claude/
+docs/SPEC.md
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+.ruff_cache/
+*.egg-info/
+
+# ML artefacts (dataset, TensorBoard runs, checkpoints are never committed;
+# the exported web/public/models/classifier.onnx IS committed)
+ml/data/
+ml/runs/
+ml/checkpoints/
+
+# Node
+node_modules/
+web/dist/
+coverage/
+
+# OS / editors
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/extensions.json
