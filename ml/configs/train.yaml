@@ -1,0 +1,36 @@
+# Training configuration (SPEC §5). CLI flags override these; --quick applies `quick`.
+data:
+  train_per_class: null   # null = all 5,000
+  val_per_class: null     # null = all 500
+
+model:
+  d_model: 128
+  n_layers: 4
+  n_heads: 4
+  d_ff: 256
+  dropout: 0.1
+
+augment:
+  prefix_prob: 0.5
+  scale_min: 0.9
+  scale_max: 1.1
+  rotate_deg: 10.0
+
+train:
+  epochs: 15
+  batch_size: 256
+  lr: 1.0e-3
+  weight_decay: 0.01
+  warmup_epochs: 1
+  label_smoothing: 0.1
+  grad_clip: 1.0
+  num_workers: 2          # DataLoader worker processes (augmentation runs there)
+  num_threads: null       # torch CPU threads; null = PyTorch default
+  seed: 42
+
+quick:                    # ~5 minute sanity run: uv run python -m doodle_ml.train --quick
+  data:
+    train_per_class: 300
+    val_per_class: 50
+  train:
+    epochs: 2

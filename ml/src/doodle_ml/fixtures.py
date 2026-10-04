@@ -1,0 +1,151 @@
+"""Golden preprocessing fixtures shared with the TypeScript implementation (SPEC §4).
+
+Writes ``shared/fixtures/preprocess_cases.json``. Both ``pytest`` and ``vitest`` load it
+and compare their output to ``expected`` within 1e-5.
+
+Usage (from ``ml/``)::
+
+    uv run python -m doodle_ml.fixtures            # offset_scale placeholder 1.0
+    uv run python -m doodle_ml.fixtures --offset-scale 12.3
+"""
+
+from __future__ import annotations
+
+import argparse
+import json
+import math
+from dataclasses import asdict, replace
+from pathlib import Path
+from typing import Any
+
+import numpy as np
+
+from doodle_ml.config import ML_ROOT
+from doodle_ml.preprocess import PreprocessConfig, encode, simplify_drawing
+
+FIXTURES_DIR = ML_ROOT.parent / "shared" / "fixtures"
+PREPROCESS_FIXTURE = FIXTURES_DIR / "preprocess_cases.json"
+FORMAT_VERSION = 1
+
+RawDrawing = list[list[list[float]]]
+
+
+def _circle(cx: float, cy: float, r: float, n: int) -> list[list[float]]:
+    return [
+        [round(cx + r * math.cos(2 * math.pi * i / n), 3),
+         round(cy + r * math.sin(2 * math.pi * i / n), 3)]
+        for i in range(n + 1)
+    ]  # fmt: skip
+
+
+def _random_walk(rng: np.random.Generator, n_strokes: int, n_points: int) -> RawDrawing:
+    drawing: RawDrawing = []
+    x, y = 400.0, 300.0
+    for _ in range(n_strokes):
+        stroke = []
+        for _ in range(n_points):
+            x += float(rng.normal(0, 25))
+            y += float(rng.normal(0, 25))
+            stroke.append([round(x, 2), round(y, 2)])
+        drawing.append(stroke)
+    return drawing
+
+
+def build_inputs() -> list[tuple[str, RawDrawing, dict[str, float]]]:
+    """(name, raw strokes, config overrides). Inputs are rounded so JSON is exact."""
+    rng = np.random.default_rng(1234)
+    zigzag = [[float(i * 10), float(1 if i % 2 else 0)] for i in range(21)]
+    spiral = [
+        [round(400 + (5 + 3 * t) * math.cos(t), 2), round(300 + (5 + 3 * t) * math.sin(t), 2)]
+        for t in np.linspace(0, 6 * math.pi, 120)
+    ]
+    house = [
+        [[0, 100], [100, 100], [100, 0], [0, 0], [0, 100]],
+        [[0, 0], [50, -60], [100, 0]],
+        [[40, 100], [40, 60], [60, 60], [60, 100]],
+    ]
+    dataset_like = [
+        [[17, 32, 61, 102, 140, 169, 189], [104, 72, 47, 38, 44, 64, 96]],
+        [[30, 25, 30, 60, 120, 170, 182], [104, 160, 200, 230, 232, 201, 120]],
+        [[78], [110]],
+        [[120, 122], [108, 109]],
+    ]
+    negative = [[[-50, -20], [-10, -80], [30, -20]], [[-50, -20], [30, -20]]]
+    dataset_like_points = [[[x, y] for x, y in zip(xs, ys, strict=True)] for xs, ys in dataset_like]
+    return [
+        ("empty_drawing", [], {}),
+        ("empty_strokes_only", [[], []], {}),
+        ("single_dot", [[[10, 20]]], {}),
+        ("two_identical_points", [[[5, 5], [5, 5]]], {}),
+        ("horizontal_line", [[[0, 0], [100, 0]]], {}),
+        ("vertical_line", [[[3, 10], [3, 250]]], {}),
+        ("diagonal_line_fractional", [[[0.5, 0.25], [30.75, 40.5]]], {}),
+        ("zigzag_noise_is_simplified", [zigzag], {}),
+        ("closed_square", [[[0, 0], [50, 0], [50, 50], [0, 50], [0, 0]]], {}),
+        ("circle", [_circle(200, 200, 80, 36)], {}),
+        ("house_multi_stroke", house, {}),
+        ("negative_coordinates", negative, {}),
+        ("tiny_drawing_scaled_up", [[[100, 100], [101, 102], [102, 100]]], {}),
+        ("large_canvas_spiral", [spiral], {}),
+        ("duplicate_consecutive_points", [[[0, 0], [0, 0], [40, 0], [40, 0], [40, 40]]], {}),
+        ("empty_stroke_in_middle", [[[0, 0], [60, 0]], [], [[0, 30], [60, 30]]], {}),
+        ("dot_strokes_between_lines", [[[0, 0], [80, 80]], [[40, 10]], [[0, 80], [80, 0]]], {}),
+        ("dataset_like_drawing", dataset_like_points, {}),
+        ("truncated_over_max_len", _random_walk(rng, 12, 40), {}),
+        ("custom_offset_scale_and_max_len", house, {"offset_scale": 2.5, "max_len": 8}),
+    ]  # fmt: skip
+
+
+def build_cases(base: PreprocessConfig) -> list[dict[str, Any]]:
+    cases = []
+    for name, raw, overrides in build_inputs():
+        config = replace(base, **overrides)
+        simplified = simplify_drawing(raw, config)
+        strokes, mask = encode(simplified, config)
+        length = int(mask.sum())
+        cases.append(
+            {
+                "name": name,
+                "config": asdict(config),
+                "input": raw,
+                "expected": {
+                    "simplified": [[[x, y] for x, y in stroke] for stroke in simplified],
+                    "length": length,
+                    "rows": strokes[:length].astype(float).tolist(),
+                },
+            }
+        )
+    return cases
+
+
+def write_preprocess_fixture(
+    path: Path = PREPROCESS_FIXTURE,
+    config: PreprocessConfig = PreprocessConfig(),  # noqa: B008
+) -> Path:
+    payload = {
+        "format_version": FORMAT_VERSION,
+        "description": (
+            "Golden cases for the stroke preprocessing contract (docs: SPEC section 4). "
+            "Generated by ml/src/doodle_ml/fixtures.py; do not edit by hand. "
+            "'rows' are the real (unpadded) stroke-3 rows; padding rows are zeros."
+        ),
+        "tolerance": 1e-5,
+        "cases": build_cases(config),
+    }
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(payload, indent=1) + "\n", encoding="utf-8")
+    return path
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(description="Write shared preprocessing fixtures.")
+    parser.add_argument("--offset-scale", type=float, default=1.0)
+    parser.add_argument("--out", type=Path, default=PREPROCESS_FIXTURE)
+    args = parser.parse_args(argv)
+    path = write_preprocess_fixture(args.out, PreprocessConfig(offset_scale=args.offset_scale))
+    print(f"Wrote {path}")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

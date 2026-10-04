@@ -120,23 +120,48 @@ class DrawingSet:
         starts = self._stroke_starts
         return [self.points[starts[j] : starts[j + 1]] for j in range(first, last)]
 
+    def drawing_point_starts(self) -> np.ndarray:
+        """Index into ``points`` of the first point of each drawing."""
+        return self._stroke_starts[self._drawing_starts[:-1]]
+
     def points_per_drawing(self) -> np.ndarray:
         return np.diff(self._stroke_starts[self._drawing_starts])
+
+    def subset(self, indices: Sequence[int] | np.ndarray) -> DrawingSet:
+        drawings = [self.strokes(int(i)) for i in indices]
+        labels = [int(self.labels[int(i)]) for i in indices]
+        return DrawingSet.from_drawings(drawings, labels, self.categories, self.points.dtype.type)
+
+    def first_per_class(self, n: int) -> DrawingSet:
+        """The first ``n`` drawings of every class (for quick runs)."""
+        keep: list[int] = []
+        counts = np.zeros(len(self.categories), dtype=np.int64)
+        for i, label in enumerate(self.labels):
+            if counts[label] < n:
+                keep.append(i)
+                counts[label] += 1
+        return self.subset(keep)
 
     def __getitem__(self, i: int) -> tuple[Drawing, int]:
         return self.strokes(i), int(self.labels[i])
 
     @classmethod
     def from_drawings(
-        cls, drawings: Sequence[Drawing], labels: Sequence[int], categories: list[str]
+        cls,
+        drawings: Sequence[Drawing],
+        labels: Sequence[int],
+        categories: list[str],
+        dtype: type[np.generic] = np.uint8,
     ) -> DrawingSet:
+        """Pack ragged drawings. ``dtype`` is uint8 for raw data, float32 for the
+        simplified cache."""
         if len(drawings) != len(labels):
             raise ValueError("drawings and labels differ in length")
         all_strokes = [stroke for drawing in drawings for stroke in drawing]
         points = (
-            np.concatenate(all_strokes).astype(np.uint8)
+            np.concatenate(all_strokes).astype(dtype)
             if all_strokes
-            else np.zeros((0, 2), dtype=np.uint8)
+            else np.zeros((0, 2), dtype=dtype)
         )
         return cls(
             points=points,

@@ -1,0 +1,92 @@
+[
+  {
+    "true": "dog",
+    "predicted": "elephant",
+    "count": 51,
+    "rate": 0.102
+  },
+  {
+    "true": "dog",
+    "predicted": "cat",
+    "count": 46,
+    "rate": 0.092
+  },
+  {
+    "true": "elephant",
+    "predicted": "dog",
+    "count": 40,
+    "rate": 0.08
+  },
+  {
+    "true": "spider",
+    "predicted": "sun",
+    "count": 27,
+    "rate": 0.054
+  },
+  {
+    "true": "moon",
+    "predicted": "clock",
+    "count": 26,
+    "rate": 0.052
+  },
+  {
+    "true": "moon",
+    "predicted": "banana",
+    "count": 24,
+    "rate": 0.048
+  },
+  {
+    "true": "umbrella",
+    "predicted": "mushroom",
+    "count": 23,
+    "rate": 0.046
+  },
+  {
+    "true": "bridge",
+    "predicted": "rainbow",
+    "count": 22,
+    "rate": 0.044
+  },
+  {
+    "true": "banana",
+    "predicted": "moon",
+    "count": 20,
+    "rate": 0.04
+  },
+  {
+    "true": "cat",
+    "predicted": "dog",
+    "count": 19,
+    "rate": 0.038
+  },
+  {
+    "true": "bridge",
+    "predicted": "table",
+    "count": 16,
+    "rate": 0.032
+  },
+  {
+    "true": "hammer",
+    "predicted": "windmill",
+    "count": 15,
+    "rate": 0.03
+  },
+  {
+    "true": "bird",
+    "predicted": "dog",
+    "count": 14,
+    "rate": 0.028
+  },
+  {
+    "true": "dog",
+    "predicted": "bird",
+    "count": 13,
+    "rate": 0.026
+  },
+  {
+    "true": "door",
+    "predicted": "book",
+    "count": 13,
+    "rate": 0.026
+  }
+]
