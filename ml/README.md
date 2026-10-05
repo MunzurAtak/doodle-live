@@ -12,6 +12,7 @@ uv run python -m doodle_ml.cache          # simplify all drawings once + compute
 uv run python -m doodle_ml.train --quick  # few-minute sanity run
 uv run python -m doodle_ml.train          # full run (configs/train.yaml)
 uv run python -m doodle_ml.evaluate       # writes ../reports/
+uv run python -m doodle_ml.export         # ONNX + int8 -> ../web/public/models/, fixtures, latency
 uv run tensorboard --logdir runs
 uv run pytest
 uv run ruff check . && uv run ruff format --check .
@@ -55,3 +56,12 @@ that padding never changes the output.
 
 `evaluate.py` runs partial drawings through the exact live preprocessing pipeline, so the
 accuracy-vs-strokes curve reflects what the game sees.
+
+## Export
+
+`export.py` exports the best checkpoint to ONNX (opset 17, fixed input shape
+`[1, 200, 3]` + `[1, 200]`), applies dynamic int8 quantization (2.2 MB -> 0.7 MB) and fails
+unless the fp32 model matches PyTorch within 1e-4 and the int8 model agrees on >= 98% of
+1,000 test drawings (currently 99.8%). It writes `web/public/models/`, regenerates the shared
+fixtures with the real `offset_scale` and records single-threaded CPU latency in
+`reports/latency.json`.

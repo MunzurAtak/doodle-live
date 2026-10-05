@@ -1,0 +1,18 @@
+{
+  "note": "onnxruntime CPU, 1 thread, batch 1, fixed shape [1, 200, 3]",
+  "fp32": {
+    "median_ms": 7.831,
+    "p95_ms": 10.299,
+    "size_kb": 2218.7
+  },
+  "int8": {
+    "median_ms": 6.516,
+    "p95_ms": 8.676,
+    "size_kb": 670.7
+  },
+  "parity": {
+    "n": 1000,
+    "fp32_max_abs_diff": 4.0531158447265625e-06,
+    "int8_top1_agreement": 0.998
+  }
+}

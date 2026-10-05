@@ -10,6 +10,10 @@ const REPO_BASE = '/doodle-live/'
 export default defineConfig({
   base: REPO_BASE,
   plugins: [react(), tailwindcss()],
+  worker: { format: 'es' },
+  // onnxruntime-web finds its .wasm file via `new URL(..., import.meta.url)`; Vite's
+  // dependency pre-bundling would break that path in dev, so serve it as-is.
+  optimizeDeps: { exclude: ['onnxruntime-web'] },
   test: {
     environment: 'jsdom',
     setupFiles: ['./src/test/setup.ts'],
