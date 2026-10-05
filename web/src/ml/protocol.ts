@@ -4,7 +4,13 @@ import type { Point } from './preprocess'
 /** Messages between the main thread and `classifier.worker.ts`. */
 export type WorkerRequest =
   | { readonly type: 'init'; readonly modelsUrl: string }
-  | { readonly type: 'classify'; readonly id: number; readonly strokes: readonly (readonly Point[])[] }
+  | {
+      readonly type: 'classify'
+      readonly id: number
+      readonly strokes: readonly (readonly Point[])[]
+      /** false while a stroke is still being drawn. Echoed back in the result. */
+      readonly final: boolean
+    }
 
 export type WorkerResponse =
   | { readonly type: 'ready'; readonly categories: readonly string[] }
@@ -16,4 +22,7 @@ export type WorkerResponse =
       readonly probs: readonly number[]
       readonly inputLength: number
       readonly ms: number
+      /** Number of strokes in the classified drawing. */
+      readonly strokes: number
+      readonly final: boolean
     }

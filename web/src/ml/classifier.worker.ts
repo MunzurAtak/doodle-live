@@ -53,6 +53,8 @@ async function drain(): Promise<void> {
         probs: prediction.probs,
         inputLength: prediction.inputLength,
         ms: performance.now() - start,
+        strokes: request.strokes.length,
+        final: request.final,
       })
     } catch (error) {
       post({ type: 'error', message: error instanceof Error ? error.message : String(error) })

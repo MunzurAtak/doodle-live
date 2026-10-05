@@ -22,6 +22,7 @@ export function useClassifier(createWorker: () => WorkerLike = createClassifierW
       : { state: 'loading' },
   )
   const [result, setResult] = useState<ClassifierResult | null>(null)
+  const [categories, setCategories] = useState<readonly string[]>([])
 
   useEffect(() => {
     if (typeof Worker === 'undefined') return
@@ -29,7 +30,10 @@ export function useClassifier(createWorker: () => WorkerLike = createClassifierW
       createWorker(),
       modelsBaseUrl(new URL(import.meta.env.BASE_URL, window.location.href).href),
       {
-        onReady: () => setStatus({ state: 'ready' }),
+        onReady: (labels) => {
+          setCategories(labels)
+          setStatus({ state: 'ready' })
+        },
         onResult: setResult,
         onError: (message) => setStatus({ state: 'error', message }),
       },
@@ -41,11 +45,11 @@ export function useClassifier(createWorker: () => WorkerLike = createClassifierW
     }
   }, [createWorker])
 
-  const classify = useCallback((strokes: readonly (readonly Point[])[]) => {
-    clientRef.current?.classify(strokes)
+  const classify = useCallback((strokes: readonly (readonly Point[])[], final: boolean) => {
+    clientRef.current?.classify(strokes, final)
   }, [])
 
   const reset = useCallback(() => setResult(null), [])
 
-  return { status, result, classify, reset }
+  return { status, result, categories, classify, reset }
 }

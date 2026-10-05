@@ -24,6 +24,8 @@ const result = (id: number): WorkerResponse => ({
   probs: [],
   inputLength: 1,
   ms: 1,
+  strokes: 1,
+  final: true,
 })
 
 function setup() {
@@ -46,6 +48,7 @@ describe('ClassifierClient', () => {
     expect(client.classify([[{ x: 0, y: 0 }]])).toBe(1)
     expect(client.classify([[{ x: 1, y: 1 }]])).toBe(2)
     expect(worker.sent.slice(1).map((m) => m.type)).toEqual(['classify', 'classify'])
+    expect(worker.sent[1]).toMatchObject({ id: 1, final: true })
 
     worker.reply(result(2))
     worker.reply(result(1)) // stale: arrives after a newer one

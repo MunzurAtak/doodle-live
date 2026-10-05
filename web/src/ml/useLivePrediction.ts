@@ -10,7 +10,7 @@ export const LIVE_THROTTLE_MS = 250
 export function useLivePrediction(
   strokes: readonly (readonly Point[])[],
   inProgress: boolean,
-  classify: (strokes: readonly (readonly Point[])[]) => void,
+  classify: (strokes: readonly (readonly Point[])[], final: boolean) => void,
   onEmpty: () => void,
   throttleMs = LIVE_THROTTLE_MS,
 ) {
@@ -24,7 +24,7 @@ export function useLivePrediction(
     const now = performance.now()
     if (!inProgress || now - lastSent.current >= throttleMs) {
       lastSent.current = now
-      classify(strokes)
+      classify(strokes, !inProgress)
     }
   }, [strokes, inProgress, classify, onEmpty, throttleMs])
 }

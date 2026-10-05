@@ -1,1 +1,67 @@
 @import 'tailwindcss';
+@import '@fontsource-variable/bricolage-grotesque';
+@import '@fontsource-variable/lexend';
+
+@theme {
+  --font-display: 'Bricolage Grotesque Variable', ui-sans-serif, system-ui, sans-serif;
+  --font-sans: 'Lexend Variable', ui-sans-serif, system-ui, sans-serif;
+
+  --color-board: #eef1f8;
+  --color-paper: #ffffff;
+  --color-ink: #1b1f3b;
+  --color-ink-soft: #565b7a;
+  --color-ink-faint: #9aa0b8;
+  --color-rule: #d9deeb;
+  --color-marker: #2f5bea;
+  --color-marker-dark: #2147c4;
+  --color-highlight: #ffd84d;
+  --color-hit: #1e9e62;
+  --color-miss: #e5484d;
+}
+
+body {
+  background: var(--color-board);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+}
+
+/* Faint dot grid on the drawing paper (not part of the strokes the model sees). */
+.paper {
+  background-color: var(--color-paper);
+  background-image: radial-gradient(circle, #e3e7f2 1.2px, transparent 1.3px);
+  background-size: 24px 24px;
+}
+
+/* Highlighter swipe behind the target word: the one loud element on the page. */
+.highlight {
+  position: relative;
+  z-index: 0;
+}
+.highlight::before {
+  content: '';
+  position: absolute;
+  inset: 0.18em -0.22em 0.08em -0.18em;
+  z-index: -1;
+  background: var(--color-highlight);
+  border-radius: 0.3em 0.5em 0.35em 0.6em;
+  transform: rotate(-1.5deg);
+}
+
+@keyframes count-pop {
+  from {
+    transform: scale(1.4);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+.count-pop {
+  animation: count-pop 350ms ease-out;
+}
+@media (prefers-reduced-motion: reduce) {
+  .count-pop {
+    animation: none;
+  }
+}

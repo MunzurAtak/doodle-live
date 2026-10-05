@@ -39,9 +39,9 @@ export class ClassifierClient {
     worker.postMessage({ type: 'init', modelsUrl })
   }
 
-  classify(strokes: readonly (readonly Point[])[]): number {
+  classify(strokes: readonly (readonly Point[])[], final = true): number {
     const id = ++this.nextId
-    this.worker.postMessage({ type: 'classify', id, strokes })
+    this.worker.postMessage({ type: 'classify', id, strokes, final })
     return id
   }
 
