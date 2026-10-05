@@ -11,6 +11,9 @@ export default defineConfig({
   base: REPO_BASE,
   plugins: [react(), tailwindcss()],
   worker: { format: 'es' },
+  // WebLLM (~6 MB) is only fetched when the player wakes the commentator, so its large
+  // lazy chunks are expected.
+  build: { chunkSizeWarningLimit: 6500 },
   // onnxruntime-web finds its .wasm file via `new URL(..., import.meta.url)`; Vite's
   // dependency pre-bundling would break that path in dev, so serve it as-is.
   optimizeDeps: { exclude: ['onnxruntime-web'] },

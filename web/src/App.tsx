@@ -1,9 +1,14 @@
-import { useCallback, useEffect, useMemo, useReducer } from 'react'
+import { useCallback, useEffect, useMemo, useReducer, useState } from 'react'
 import { DrawingCanvas } from './canvas/DrawingCanvas'
 import { EMPTY_STROKES, strokesReducer, visibleStrokes } from './canvas/strokes'
-import { useScriptedCommentary } from './commentator/useScriptedCommentary'
+import { MOOD } from './commentator/commentary'
+import { DEFAULT_PERSONALITY, getPersonality } from './commentator/personalities'
+import { useCommentaryEvents } from './commentator/useCommentaryEvents'
+import { useCommentator } from './commentator/useCommentator'
+import { useLLM } from './commentator/useLLM'
 import { Avatar } from './components/Avatar'
 import { CategoryList } from './components/CategoryList'
+import { type CommentatorSettings, CommentatorPanel } from './components/CommentatorPanel'
 import { ConfidenceChart } from './components/ConfidenceChart'
 import { EndScreen } from './components/EndScreen'
 import { GuessList } from './components/GuessList'
@@ -64,7 +69,7 @@ function App() {
     () => (strokes.length > 0 && result ? result.top : []),
     [strokes.length, result],
   )
-  const commentary = useScriptedCommentary({
+  const events = useCommentaryEvents({
     phase: game.phase,
     round: game.round,
     word,
@@ -72,6 +77,29 @@ function App() {
     strokes: strokes.length,
     now,
   })
+  const [settings, setSettings] = useState<CommentatorSettings>({
+    enabled: true,
+    voice: false,
+    personality: DEFAULT_PERSONALITY,
+    modelSize: 'default',
+  })
+  const llm = useLLM()
+  const { view } = useCommentator({
+    event: events.event,
+    eventSeq: events.seq,
+    round: events.epoch,
+    enabled: settings.enabled,
+    voice: settings.voice,
+    personality: getPersonality(settings.personality),
+    llm: llm.client,
+    context: {
+      strokes: strokes.length,
+      secondsLeft: game.phase === 'drawing' ? secondsLeft(game, now) : null,
+      candidates: top,
+      answer: word,
+    },
+  })
+  const mood = view ? (view.streaming && !view.text ? 'thinking' : MOOD[view.event.type]) : 'idle'
 
   const start = () =>
     dispatch({
@@ -197,12 +225,26 @@ function App() {
               aria-label="AI contestant"
             >
               <div className="flex items-start gap-3">
-                <Avatar mood={commentary.mood} />
+                <Avatar mood={mood} />
                 <SpeechBubble
-                  text={commentary.line}
-                  placeholder={ready ? 'Draw something and I will guess out loud.' : 'Warming up…'}
+                  text={view?.text ?? null}
+                  streaming={view?.streaming ?? false}
+                  placeholder={
+                    !settings.enabled
+                      ? 'Commentary is off.'
+                      : ready
+                        ? 'Draw something and I will guess out loud.'
+                        : 'Warming up…'
+                  }
                 />
               </div>
+
+              <CommentatorPanel
+                status={llm.status}
+                settings={settings}
+                onChange={setSettings}
+                onWake={(size) => void llm.wake(size)}
+              />
 
               {status.state === 'error' && (
                 <p role="alert" className="text-sm text-miss">

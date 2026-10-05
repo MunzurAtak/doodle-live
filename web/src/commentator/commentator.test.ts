@@ -111,7 +111,7 @@ describe('scripted lines', () => {
 })
 
 describe('commentaryReducer', () => {
-  it('greets a round, reacts to guesses, celebrates a win with the answer', async () => {
+  it('emits round start, guesses, stuck and the result as numbered events', async () => {
     const { INITIAL_COMMENTARY, commentaryReducer } = await import('./commentary')
     let s = commentaryReducer(INITIAL_COMMENTARY, {
       type: 'phase',
@@ -119,15 +119,12 @@ describe('commentaryReducer', () => {
       word: 'cat',
       label: undefined,
       now: 0,
-      rand: 0,
     })
-    expect(s.event?.type).toBe('ROUND_START')
+    expect([s.event?.type, s.seq]).toEqual(['ROUND_START', 1])
     s = commentaryReducer(s, { type: 'strokes', strokes: 1, now: 500 })
-    s = commentaryReducer(s, { type: 'prediction', top: top('dog', 0.3), rand: 0 })
-    expect(s.event?.type).toBe('FIRST_GUESS')
-    expect(s.line).toContain('dog')
-    expect(s.mood).toBe('thinking')
-    s = commentaryReducer(s, { type: 'tick', now: 5000, top: top('dog', 0.3), rand: 0 })
+    s = commentaryReducer(s, { type: 'prediction', top: top('dog', 0.3) })
+    expect([s.event?.type, s.event?.label, s.seq]).toEqual(['FIRST_GUESS', 'dog', 2])
+    s = commentaryReducer(s, { type: 'tick', now: 5000, top: top('dog', 0.3) })
     expect(s.event?.type).toBe('STUCK')
     s = commentaryReducer(s, {
       type: 'phase',
@@ -135,17 +132,24 @@ describe('commentaryReducer', () => {
       word: 'cat',
       label: 'cat',
       now: 6000,
-      rand: 0,
     })
-    expect(s.line?.toLowerCase()).toContain('cat')
-    expect(s.mood).toBe('happy')
+    expect(s.event).toMatchObject({ type: 'ROUND_WON', answer: 'cat', priority: 3 })
   })
 
-  it('resets when an empty canvas starts a new drawing', async () => {
+  it('starts a new epoch on countdown / free drawing and resets on an empty canvas', async () => {
     const { INITIAL_COMMENTARY, commentaryReducer } = await import('./commentary')
     let s = commentaryReducer(INITIAL_COMMENTARY, { type: 'strokes', strokes: 2, now: 0 })
-    s = commentaryReducer(s, { type: 'prediction', top: top('sun', 0.4), rand: 0 })
+    s = commentaryReducer(s, { type: 'prediction', top: top('sun', 0.4) })
     s = commentaryReducer(s, { type: 'strokes', strokes: 0, now: 10 })
     expect(s.memory.firstGuessMade).toBe(false)
+    const next = commentaryReducer(s, {
+      type: 'phase',
+      phase: 'countdown',
+      word: 'cat',
+      label: undefined,
+      now: 20,
+    })
+    expect(next.epoch).toBe(s.epoch + 1)
+    expect(next.seq).toBe(s.seq)
   })
 })
